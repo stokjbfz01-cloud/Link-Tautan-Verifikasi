@@ -82,7 +82,7 @@ h1{margin:0 0 8px;font-size:30px;line-height:1.1;letter-spacing:-.02em}
 import { db } from "/firebase.js";
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const WINDOW_MS = 24 * 60 * 60 * 1000;
+const WINDOW_MS = 2 * 60 * 1000;   // 2 menit
 
 const btn = document.getElementById("btn");
 const btnText = document.getElementById("btnText");
@@ -142,32 +142,21 @@ async function decideLink(deviceId, ip) {
   const now = Date.now();
   const devKey = "dev_" + deviceId;
   const ipKey = ip ? "ip_" + ip.replace(/[^a-zA-Z0-9]/g, "_") : null;
+  const keys = ipKey ? [devKey, ipKey] : [devKey];
 
-  const reads = [getDoc(doc(db, "visitors", devKey))];
-  if (ipKey) reads.push(getDoc(doc(db, "visitors", ipKey)));
-  const snaps = await Promise.all(reads);
+  const snaps = await Promise.all(keys.map(k => getDoc(doc(db, "visitors", k))));
 
-  // Jendela 24 jam dihitung dari kunjungan pertama
-  const activeStarts = snaps
-    .filter(s => s.exists())
-    .map(s => s.data().firstVisit)
-    .filter(t => now - t < WINDOW_MS);
+  // Sudah lolos verifikasi (move2link) dalam 24 jam terakhir: berikan Link 2
+  const verified = snaps.some(s => {
+    const t = s.exists() ? s.data().verifiedAt : null;
+    return t && now - t < WINDOW_MS;
+  });
+  if (verified) return linkData.link2;
 
-  let start, target;
-  if (activeStarts.length > 0) {
-    start = Math.min(...activeStarts);   // jendela asli, tidak diperpanjang
-    target = linkData.link2;
-  } else {
-    start = now;                          // jendela baru
-    target = linkData.link1;
-  }
-
-  const payload = { firstVisit: start, lastVisit: now, ip: ip ?? null, deviceId };
-  const writes = [setDoc(doc(db, "visitors", devKey), payload, { merge: true })];
-  if (ipKey) writes.push(setDoc(doc(db, "visitors", ipKey), payload, { merge: true }));
-  await Promise.all(writes);
-
-  return target;
+  // Belum terverifikasi: tandai "menunggu verifikasi" lalu berikan Link 1
+  const payload = { pendingAt: now, ip: ip ?? null, deviceId };
+  await Promise.all(keys.map(k => setDoc(doc(db, "visitors", k), payload, { merge: true })));
+  return linkData.link1;
 }
 
 async function init() {
