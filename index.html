@@ -45,7 +45,7 @@ input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(-
 .go:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--ink)}
 .go:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--ink)}
 .go:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:4px 4px 0 var(--ink)}
-#msg{min-height:22px;margin:12px 0 0;font-weight:600;color:#c0301f}
+#msg,#msgV{min-height:22px;margin:12px 0 0;font-weight:600;color:#c0301f}
 
 .list{margin-top:34px}
 h2{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:22px}
@@ -61,6 +61,14 @@ ul{list-style:none;margin:0;padding:0}
 .ib.del{background:#fff}
 .hint{margin:12px 2px 0;font-size:13px;color:var(--muted)}
 
+
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;padding:6px;background:#fff;border:3px solid var(--ink);border-radius:18px}
+.tab{font:700 15px 'Bricolage Grotesque',Figtree,system-ui,sans-serif;color:var(--ink);background:transparent;border:2px solid transparent;border-radius:12px;padding:11px 8px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--sun);border-color:var(--ink)}
+.tab:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+.steps{margin:18px 0 0;padding:14px 14px 14px 34px;border:2px dashed var(--ink);border-radius:16px;background:#f5faff;line-height:1.6;color:var(--muted)}
+.item small.t{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[hidden]{display:none!important}
 #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;z-index:5;background:var(--ink);color:#fff;font-weight:600;padding:12px 20px;border-radius:14px;border:3px solid #fff;transition:.25s;pointer-events:none;max-width:90vw}
 #toast.show{transform:translate(-50%,0);opacity:1}
 @media (prefers-reduced-motion:reduce){.cloud{animation:none}.go,#toast{transition:none}}
@@ -83,32 +91,70 @@ ul{list-style:none;margin:0;padding:0}
     <div class="chip">Admin</div>
   </header>
 
-  <main class="card">
-    <h1>Terbitkan tautan baru</h1>
-    <p class="sub">Isi dua tujuan. Pengunjung baru mendapat Link 1. Jika kembali dalam 24 jam, ia mendapat Link 2.</p>
+  <div class="tabs" role="tablist" aria-label="Menu admin">
+    <button class="tab" role="tab" id="tab-verif" aria-selected="true" aria-controls="panel-verif" data-tab="verif" type="button">Verifikasi IP</button>
+    <button class="tab" role="tab" id="tab-link" aria-selected="false" aria-controls="panel-link" data-tab="link" type="button">Penentuan Link</button>
+  </div>
 
-    <div class="field t1">
-      <label class="tag" for="link1"><span>Link 1</span><small>untuk kunjungan pertama</small></label>
-      <input id="link1" type="url" inputmode="url" autocomplete="off" placeholder="https://contoh.com/link-utama">
-    </div>
-    <div class="field t2">
-      <label class="tag" for="link2"><span>Link 2</span><small>untuk kunjungan ulang dalam 24 jam</small></label>
-      <input id="link2" type="url" inputmode="url" autocomplete="off" placeholder="https://contoh.com/link-kedua">
-    </div>
+  <div id="panel-verif" role="tabpanel" aria-labelledby="tab-verif">
+    <main class="card">
+      <h1>Buat link verifikasi</h1>
+      <p class="sub">Tempel link safefileku. Sistem membuat link unik yang mencatat IP pengunjung lalu langsung membuka safefileku.</p>
 
-    <button class="go" id="publish" type="button">
-      <svg viewBox="0 0 60 60" aria-hidden="true"><path d="M4 30L56 5 40 56 30 36z" fill="#fff" stroke="#1d2147" stroke-width="5" stroke-linejoin="round"/><path d="M56 5L30 36" stroke="#1d2147" stroke-width="5" stroke-linecap="round"/></svg>
-      <span id="btnText">Publish Tautan</span>
-    </button>
-    <p id="msg" role="alert"></p>
-  </main>
+      <div class="field t1">
+        <label class="tag" for="target"><span>Safefileku</span><small>tujuan akhir download</small></label>
+        <input id="target" type="url" inputmode="url" autocomplete="off" placeholder="https://safefileku.com/download/xxxx">
+      </div>
 
-  <section class="list">
-    <h2>Tautan terpublish <span id="count">0</span></h2>
-    <p class="empty" id="empty">Belum ada tautan. Isi Link 1 dan Link 2, lalu klik Publish Tautan.</p>
-    <ul id="list"></ul>
-    <p class="hint">Daftar ini hanya tersimpan di browser ini. Tombol Hapus tidak menghapus tautan yang sudah aktif.</p>
-  </section>
+      <button class="go" id="gen" type="button">
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path d="M4 30L56 5 40 56 30 36z" fill="#fff" stroke="#1d2147" stroke-width="5" stroke-linejoin="round"/><path d="M56 5L30 36" stroke="#1d2147" stroke-width="5" stroke-linecap="round"/></svg>
+        <span id="genText">Generate link verifikasi</span>
+      </button>
+      <p id="msgV" role="alert"></p>
+
+      <ol class="steps">
+        <li>Salin link verifikasi dari daftar di bawah.</li>
+        <li>Bungkus link itu dengan move2link.</li>
+        <li>Tempel hasilnya ke Link 1 di tab Penentuan Link.</li>
+      </ol>
+    </main>
+
+    <section class="list">
+      <h2>Link verifikasi <span id="countV">0</span></h2>
+      <p class="empty" id="emptyV">Belum ada link verifikasi. Tempel link safefileku di atas, lalu klik Generate link verifikasi.</p>
+      <ul id="listV"></ul>
+      <p class="hint">Daftar ini hanya tersimpan di browser ini. Tombol Hapus tidak menghapus link yang sudah aktif.</p>
+    </section>
+  </div>
+
+  <div id="panel-link" role="tabpanel" aria-labelledby="tab-link" hidden>
+    <main class="card">
+      <h1>Terbitkan tautan baru</h1>
+      <p class="sub">Pengunjung baru mendapat Link 1. Setelah lolos verifikasi IP, kunjungan berikutnya dalam 24 jam mendapat Link 2.</p>
+
+      <div class="field t1">
+        <label class="tag" for="link1"><span>Link 1</span><small>move2link, pembungkus link verifikasi</small></label>
+        <input id="link1" type="url" inputmode="url" autocomplete="off" placeholder="https://move2link.com/xxxx">
+      </div>
+      <div class="field t2">
+        <label class="tag" for="link2"><span>Link 2</span><small>safelinku, setelah verifikasi (24 jam)</small></label>
+        <input id="link2" type="url" inputmode="url" autocomplete="off" placeholder="https://safelinku.com/xxxx">
+      </div>
+
+      <button class="go" id="publish" type="button">
+        <svg viewBox="0 0 60 60" aria-hidden="true"><path d="M4 30L56 5 40 56 30 36z" fill="#fff" stroke="#1d2147" stroke-width="5" stroke-linejoin="round"/><path d="M56 5L30 36" stroke="#1d2147" stroke-width="5" stroke-linecap="round"/></svg>
+        <span id="btnText">Publish Tautan</span>
+      </button>
+      <p id="msg" role="alert"></p>
+    </main>
+
+    <section class="list">
+      <h2>Tautan terpublish <span id="count">0</span></h2>
+      <p class="empty" id="empty">Belum ada tautan. Isi Link 1 dan Link 2, lalu klik Publish Tautan.</p>
+      <ul id="list"></ul>
+      <p class="hint">Daftar ini hanya tersimpan di browser ini. Tombol Hapus tidak menghapus tautan yang sudah aktif.</p>
+    </section>
+  </div>
 </div>
 
 <div id="toast" role="status"></div>
@@ -118,12 +164,16 @@ import { db } from "/firebase.js";
 import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const $ = id => document.getElementById(id);
-const KEY = "published_links";
-let freshId = null;
+const LISTS = {
+  link:  { key: "published_links", ul: "list",  count: "count",  empty: "empty"  },
+  verif: { key: "verif_links",     ul: "listV", count: "countV", empty: "emptyV" }
+};
+const fresh = { link: null, verif: null };
 
-const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
-const save = a => { try { localStorage.setItem(KEY, JSON.stringify(a.slice(0, 50))); } catch {} };
+const load = key => { try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; } };
+const save = (key, a) => { try { localStorage.setItem(key, JSON.stringify(a.slice(0, 50))); } catch {} };
 const isValidUrl = v => { try { const u = new URL(v); return u.protocol === "https:" || u.protocol === "http:"; } catch { return false; } };
+const newId = () => crypto.randomUUID().replace(/-/g, "").slice(0, 10);
 
 let timer;
 function toast(text) {
@@ -147,16 +197,17 @@ function btn(label, cls, onClick) {
   return b;
 }
 
-function render() {
-  const items = load();
-  const ul = $("list");
+function render(kind) {
+  const cfg = LISTS[kind];
+  const items = load(cfg.key);
+  const ul = $(cfg.ul);
   ul.replaceChildren();
-  $("count").textContent = items.length;
-  $("empty").hidden = items.length > 0;
+  $(cfg.count).textContent = items.length;
+  $(cfg.empty).hidden = items.length > 0;
 
   items.forEach(item => {
     const li = document.createElement("li");
-    li.className = "item" + (item.id === freshId ? " new" : "");
+    li.className = "item" + (item.id === fresh[kind] ? " new" : "");
 
     const info = document.createElement("div");
     info.className = "info";
@@ -166,18 +217,67 @@ function render() {
     a.rel = "noopener";
     a.textContent = item.url.replace(/^https?:\/\//, "");
     const small = document.createElement("small");
-    small.textContent = new Date(item.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+    small.className = "t";
+    let host = "";
+    try { host = item.target ? " | ke " + new URL(item.target).hostname : ""; } catch {}
+    small.textContent = new Date(item.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) + host;
     info.append(a, small);
 
     li.append(
       info,
       btn("Salin", "", async () => toast(await copy(item.url) ? "Tautan disalin" : "Gagal menyalin, salin manual")),
-      btn("Hapus", "del", () => { save(load().filter(x => x.id !== item.id)); render(); })
+      btn("Hapus", "del", () => { save(cfg.key, load(cfg.key).filter(x => x.id !== item.id)); render(kind); })
     );
     ul.append(li);
   });
 }
 
+// Tab
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    const name = t.dataset.tab;
+    document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", String(x === t)));
+    $("panel-verif").hidden = name !== "verif";
+    $("panel-link").hidden = name !== "link";
+  });
+});
+
+// Generate link verifikasi
+$("gen").addEventListener("click", async () => {
+  const b = $("gen"), msg = $("msgV");
+  const target = $("target").value.trim();
+  msg.textContent = "";
+
+  if (!isValidUrl(target)) {
+    msg.textContent = "Link safefileku harus berupa URL valid, diawali https://";
+    return;
+  }
+
+  const id = newId();
+  b.disabled = true;
+  $("genText").textContent = "Membuat...";
+
+  try {
+    const createdAt = Date.now();
+    await setDoc(doc(db, "verifs", id), { target, createdAt });
+
+    const url = `${location.origin}/v/${id}`;
+    fresh.verif = id;
+    save(LISTS.verif.key, [{ id, url, target, createdAt }, ...load(LISTS.verif.key)]);
+    render("verif");
+
+    $("target").value = "";
+    toast(await copy(url) ? "Link verifikasi dibuat dan disalin" : "Link verifikasi dibuat");
+  } catch (err) {
+    console.error(err);
+    msg.textContent = "Gagal menyimpan. Periksa konfigurasi Firebase dan aturan Firestore.";
+  } finally {
+    b.disabled = false;
+    $("genText").textContent = "Generate link verifikasi";
+  }
+});
+
+// Publish tautan
 $("publish").addEventListener("click", async () => {
   const b = $("publish"), msg = $("msg");
   const link1 = $("link1").value.trim();
@@ -189,7 +289,7 @@ $("publish").addEventListener("click", async () => {
     return;
   }
 
-  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 10);
+  const id = newId();
   b.disabled = true;
   $("btnText").textContent = "Menerbitkan...";
 
@@ -198,9 +298,9 @@ $("publish").addEventListener("click", async () => {
     await setDoc(doc(db, "links", id), { link1, link2, createdAt });
 
     const url = `${location.origin}/d/${id}`;
-    freshId = id;
-    save([{ id, url, createdAt }, ...load()]);
-    render();
+    fresh.link = id;
+    save(LISTS.link.key, [{ id, url, createdAt }, ...load(LISTS.link.key)]);
+    render("link");
 
     $("link1").value = "";
     $("link2").value = "";
@@ -214,7 +314,8 @@ $("publish").addEventListener("click", async () => {
   }
 });
 
-render();
+render("verif");
+render("link");
 </script>
 </body>
 </html>
